@@ -117,7 +117,6 @@ func VideoProxy(c *gin.Context) {
 			})
 			return
 		}
-
 		videoURL, err = getGeminiVideoURL(channel, task, apiKey)
 		if err != nil {
 			logger.LogError(c.Request.Context(), fmt.Sprintf("Failed to resolve Gemini video URL for task %s: %s", taskID, err.Error()))
@@ -130,6 +129,9 @@ func VideoProxy(c *gin.Context) {
 			return
 		}
 		req.Header.Set("x-goog-api-key", apiKey)
+	case constant.ChannelTypeCloudflareAiGateway:
+		req.Header.Set("x-goog-api-key", channel.Key)
+		videoURL = task.FailReason
 	case constant.ChannelTypeOpenAI, constant.ChannelTypeSora:
 		videoURL = fmt.Sprintf("%s/v1/videos/%s/content", baseURL, task.TaskID)
 		req.Header.Set("Authorization", "Bearer "+channel.Key)

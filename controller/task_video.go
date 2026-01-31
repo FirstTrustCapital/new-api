@@ -51,6 +51,7 @@ func updateVideoTaskAll(ctx context.Context, platform constant.TaskPlatform, cha
 	info := &relaycommon.RelayInfo{}
 	info.ChannelMeta = &relaycommon.ChannelMeta{
 		ChannelBaseUrl: cacheGetChannel.GetBaseURL(),
+		ApiVersion:     cacheGetChannel.Other, //!NOTE just for cloudflare gateway test
 	}
 	info.ApiKey = cacheGetChannel.Key
 	adaptor.Init(info)

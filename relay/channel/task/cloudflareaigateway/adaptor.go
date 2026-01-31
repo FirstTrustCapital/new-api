@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"net/url"
 	"regexp"
 	"strings"
 	"time"
@@ -19,7 +20,6 @@ import (
 	relaycommon "github.com/QuantumNous/new-api/relay/common"
 	"github.com/QuantumNous/new-api/service"
 	"github.com/QuantumNous/new-api/setting/model_setting"
-	"github.com/QuantumNous/new-api/setting/system_setting"
 	"github.com/gin-gonic/gin"
 	"github.com/pkg/errors"
 )
@@ -90,6 +90,7 @@ type TaskAdaptor struct {
 	ChannelType int
 	apiKey      string
 	baseURL     string
+	AuthInfo    string
 }
 
 func (a *TaskAdaptor) Init(info *relaycommon.RelayInfo) {
@@ -97,6 +98,7 @@ func (a *TaskAdaptor) Init(info *relaycommon.RelayInfo) {
 	a.ChannelType = info.ChannelType
 	a.baseURL = info.ChannelBaseUrl
 	a.apiKey = info.ApiKey
+	a.AuthInfo = info.ApiVersion
 }
 
 // ValidateRequestAndSetAction parses body, validates fields and sets default action.
@@ -198,7 +200,7 @@ func (a *TaskAdaptor) GetModelList() []string {
 }
 
 func (a *TaskAdaptor) GetChannelName() string {
-	return "gemini"
+	return "cloudflare-ai-gateway-gemini"
 }
 
 // FetchTask fetch task status
@@ -215,7 +217,8 @@ func (a *TaskAdaptor) FetchTask(baseUrl, key string, body map[string]any, proxy 
 
 	// For Gemini API, we use GET request to the operations endpoint
 	version := model_setting.GetGeminiVersionSetting("default")
-	url := fmt.Sprintf("%s/%s/%s", baseUrl, version, upstreamName)
+	url := fmt.Sprintf("%s/v1/%s/google-ai-studio/%s/%s", baseUrl, a.AuthInfo, version, upstreamName)
+	// url := fmt.Sprintf("%s/%s/%s", baseUrl, version, upstreamName)
 
 	req, err := http.NewRequest(http.MethodGet, url, nil)
 	if err != nil {
@@ -258,12 +261,18 @@ func (a *TaskAdaptor) ParseTaskResult(respBody []byte) (*relaycommon.TaskInfo, e
 
 	taskID := encodeLocalTaskID(op.Name)
 	ti.TaskID = taskID
-	ti.Url = fmt.Sprintf("%s/v1/videos/%s/content", system_setting.ServerAddress, taskID)
+
+	// ti.Url = fmt.Sprintf("%s/v1/videos/%s/content", system_setting.ServerAddress, taskID) // XSY
 
 	// Extract URL from generateVideoResponse if available
 	if len(op.Response.GenerateVideoResponse.GeneratedSamples) > 0 {
 		if uri := op.Response.GenerateVideoResponse.GeneratedSamples[0].Video.URI; uri != "" {
 			ti.RemoteUrl = uri
+			p, err := url.Parse(uri)
+			if err != nil {
+				return nil, fmt.Errorf("parse url failed: %w", err)
+			}
+			ti.Url = fmt.Sprintf("%s/v1/%s/google-ai-studio%s", a.baseURL, a.AuthInfo, p.RequestURI())
 		}
 	}
 

@@ -2044,10 +2044,17 @@ const EditChannelModal = (props) => {
                               rules={
                                 isEdit
                                   ? []
-                                  : [{ required: true, message: t('请输入密钥') }]
+                                  : [
+                                    {
+                                      required: true,
+                                      message: t('请输入密钥'),
+                                    },
+                                  ]
                               }
                               autoComplete='new-password'
-                              onChange={(value) => handleInputChange('key', value)}
+                              onChange={(value) =>
+                                handleInputChange('key', value)
+                              }
                               disabled={isIonetLocked}
                               extraText={
                                 <div className='flex flex-col gap-2'>
@@ -2142,7 +2149,9 @@ const EditChannelModal = (props) => {
                                   </Button>
                                   <Button
                                     size='small'
-                                    type={useManualInput ? 'primary' : 'tertiary'}
+                                    type={
+                                      useManualInput ? 'primary' : 'tertiary'
+                                    }
                                     onClick={() => {
                                       setUseManualInput(true);
                                       // 切换到手动输入模式时清空文件上传相关状态
